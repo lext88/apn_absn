@@ -1,6 +1,3 @@
-""" code references: https://github.com/AlexHex7/Non-local_pytorch """
-
-
 import torch
 from torch import nn
 from torch.nn import functional as F
