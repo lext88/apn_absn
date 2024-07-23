@@ -2,13 +2,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-class _NonLocalBlockND(nn.Module):
-    def __init__(self, in_channels, inter_channels=None, num_heads=8, dimension=1):
-        super(_NonLocalBlockND, self).__init__()
+class NonLocalSelfAttentionWithSEAndCCA(nn.Module):
+    def __init__(self, in_channels, inter_channels=None, num_heads=8):
+        super(NonLocalSelfAttentionWithSEAndCCA, self).__init__()
 
-        assert dimension == 1, "Dimension should be 1 for text data"
-
-        self.dimension = dimension
         self.num_heads = num_heads
         self.head_dim = in_channels // num_heads
 
@@ -31,6 +28,9 @@ class _NonLocalBlockND(nn.Module):
         nn.init.constant_(self.W[1].weight, 0)
         nn.init.constant_(self.W[1].bias, 0)
 
+        self.se_block = SqueezeExcitation(in_channels)
+        self.cca_block = CCA(kernel_sizes=[3, 3], planes=[in_channels // 2, in_channels])
+
     def forward(self, x):
         batch_size = x.size(0)
         seq_len = x.size(2)
@@ -51,11 +51,7 @@ class _NonLocalBlockND(nn.Module):
 
         W_y = self.W(y)
 
+        W_y = self.se_block(W_y)
+        W_y = self.cca_block(W_y)
+
         return W_y
-
-class NonLocalSelfAttention(_NonLocalBlockND):
-    def __init__(self, in_channels, inter_channels=None, num_heads=8):
-        super(NonLocalSelfAttention, self).__init__(in_channels, inter_channels=inter_channels, num_heads=num_heads, dimension=1)
-
-
-
