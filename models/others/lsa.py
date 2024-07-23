@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
-class LocalSelfAttention(nn.Module):
+class LocalSelfAttentionWithSEAndCCA(nn.Module):
     def __init__(self, in_channels, out_channels, num_heads=8, kernel_size=1, stride=1, padding=0, bias=False):
-        super(LocalSelfAttention, self).__init__()
+        super(LocalSelfAttentionWithSEAndCCA, self).__init__()
         self.out_channels = out_channels
         self.num_heads = num_heads
         self.head_dim = out_channels // num_heads
@@ -28,6 +28,9 @@ class LocalSelfAttention(nn.Module):
             nn.BatchNorm1d(out_channels)
         )
 
+        self.se_block = SqueezeExcitation(out_channels)
+        self.cca_block = CCA(kernel_sizes=[3, 3], planes=[out_channels // 2, out_channels])
+
         self.reset_parameters()
 
     def forward(self, x):
@@ -47,7 +50,10 @@ class LocalSelfAttention(nn.Module):
         attn_scores = (q_out * k_out).sum(dim=2) / (self.head_dim ** 0.5)
         attn_scores = F.softmax(attn_scores, dim=-1)
         out = torch.einsum('bnhql,bnhl -> bnhq', attn_scores, v_out).view(batch_size, -1, seq_len)
+
         out = self.agg(out)
+        out = self.se_block(out)
+        out = self.cca_block(out)
 
         return out
 
