@@ -4,10 +4,10 @@ import torch.nn.functional as F
 
 from models.resnet import ResNet
 from models.dpta import Self_Dynamic_Prototype
-from models.nlsa import NonLocalSelfAttention
-from models.isa import LocalSelfAttention
-from models.cca import CCA
+from ddf.ddf import DDFPack
+from models.cca import CrossCorrelationAttention
 from models.se import SqueezeExcitation
+from models.lsa import LocalSelfAttention
 
 class DCANet(nn.Module):
 
@@ -18,49 +18,15 @@ class DCANet(nn.Module):
         self.num_proto = args.proto_size
         self.num_spt = args.way * args.shot
 
-        # Encoder
         self.encoder = ResNet(args=args)
         self.encoder_dim = 640
-        
-        # Attention mechanisms
-        self.local_attn = LocalSelfAttention(
-            in_channels=self.encoder_dim, 
-            out_channels=self.encoder_dim, 
-            num_heads=8, 
-            kernel_size=3, 
-            stride=1, 
-            padding=1
-        )
-        
-        self.non_local_attn = NonLocalSelfAttention(
-            in_channels=self.encoder_dim, 
-            inter_channels=self.encoder_dim // 2, 
-            num_heads=8, 
-            sub_sample=True
-        )
-
-        # Channel-wise attention
-        self.squeeze_excitation = SqueezeExcitation(
-            channel=self.encoder_dim, 
-            reduction=16
-        )
-        
-        # Feature refinement
-        self.cca = CCA(kernel_sizes=[3, 3], planes=[16, 1])
-        
-        # Dynamic prototype network
-        self.dynamic_prototype = Self_Dynamic_Prototype(
-            args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1
-        )
-        
         self.fc = nn.Linear(self.encoder_dim, self.args.num_class)
         self.ddf = DDFPack(in_channels=640)
 
-        self.cca_1x1 = nn.Sequential(
-            nn.Conv2d(self.encoder_dim, 64, kernel_size=1, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU()
-        )
+        self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1)
+        self.cca = CrossCorrelationAttention(self.encoder_dim)
+        self.se = SqueezeExcitation(self.encoder_dim)
+        self.lsa = LocalSelfAttention(self.encoder_dim, self.args.num_heads)
 
         self.eq_head = nn.Sequential(
             nn.Linear(640, 640),
@@ -92,59 +58,35 @@ class DCANet(nn.Module):
         logits_eq = self.eq_head(x)
         return logits, logits_eq
 
-    def encode(self, x, aux=False):
-        x = self.encoder(x)
-        
-        # Apply attention mechanisms
-        x = self.local_attn(x)
-        x = self.non_local_attn(x)
-        x = self.squeeze_excitation(x)
-
-        if self.training:
-            if aux:
-                return x
-            else:
-                update_x, fea_loss, cst_loss, dis_loss = self.dynamic_prototype(x, x)
-                return update_x, fea_loss, cst_loss, dis_loss
-        else:
-            update_x = self.dynamic_prototype(x, x)
-            return update_x
-
     def coda(self, spt, qry):
         spt = spt.squeeze(0)
+
         spt = self.normalize_feature(spt)
         qry = self.normalize_feature(qry)
 
-        # Apply CCA
-        spt = self.cca_1x1(spt)
-        qry = self.cca_1x1(qry)
+        spt = self.se(spt)
+        qry = self.se(qry)
 
-        # Cross-Correlation Map
         corr4d = self.get_cross_correlation_map(spt, qry)
         num_qry, way, H_s, W_s, H_q, W_q = corr4d.size()
 
         corr4d_s = corr4d.view(num_qry, way, H_s * W_s, H_q, W_q)
         corr4d_q = corr4d.view(num_qry, way, H_s, W_s, H_q * W_q)
 
-        # Normalizing
         corr4d_s = self.gaussian_normalize(corr4d_s, dim=2)
         corr4d_q = self.gaussian_normalize(corr4d_q, dim=4)
 
-        # Softmax
         corr4d_s = F.softmax(corr4d_s / self.args.temperature_attn, dim=2)
         corr4d_s = corr4d_s.view(num_qry, way, H_s, W_s, H_q, W_q)
         corr4d_q = F.softmax(corr4d_q / self.args.temperature_attn, dim=4)
         corr4d_q = corr4d_q.view(num_qry, way, H_s, W_s, H_q, W_q)
 
-        # Summing up matching scores
         attn_s = corr4d_s.sum(dim=[4, 5])
         attn_q = corr4d_q.sum(dim=[2, 3])
 
-        # Applying attention
         spt_attended = attn_s.unsqueeze(2) * spt.unsqueeze(0)
         qry_attended = attn_q.unsqueeze(2) * qry.unsqueeze(1)
 
-        # Averaging embeddings
         if self.args.shot > 1:
             spt_attended = spt_attended.view(num_qry, self.args.shot, self.args.way, *spt_attended.shape[2:])
             qry_attended = qry_attended.view(num_qry, self.args.shot, self.args.way, *qry_attended.shape[2:])
@@ -157,6 +99,7 @@ class DCANet(nn.Module):
 
         spt_attended_pooled = spt_attended.mean(dim=[-1, -2])
         qry_attended_pooled = qry_attended.mean(dim=[-1, -2])
+
         qry_pooled = qry.mean(dim=[-1, -2])
 
         similarity_matrix = F.cosine_similarity(spt_attended_pooled, qry_attended_pooled, dim=-1)
@@ -176,8 +119,8 @@ class DCANet(nn.Module):
         way = spt.shape[0]
         num_qry = qry.shape[0]
 
-        spt = self.cca_1x1(spt)
-        qry = self.cca_1x1(qry)
+        spt = self.cca(spt)
+        qry = self.cca(qry)
 
         spt = F.normalize(spt, p=2, dim=1, eps=1e-8)
         qry = F.normalize(qry, p=2, dim=1, eps=1e-8)
@@ -189,3 +132,17 @@ class DCANet(nn.Module):
 
     def normalize_feature(self, x):
         return x - x.mean(1).unsqueeze(1)
+
+    def encode(self, x, aux=False):
+        x = self.encoder(x)
+        x = self.lsa(x)
+
+        if self.training:
+            if aux:
+                return x
+            else:
+                update_x, fea_loss, cst_loss, dis_loss = self.dynamic_prototype(x, x)
+                return update_x, fea_loss, cst_loss, dis_loss
+        else:
+            update_x = self.dynamic_prototype(x, x)
+            return update_x
