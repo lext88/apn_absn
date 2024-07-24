@@ -1,6 +1,6 @@
-"""does this code need the attention mechanisms incorporated: This integration enables the encoder to generate context-aware features by 
-capturing semantic relationships in textual data while adhering to the requirements of using scaled dot-product and multi-head self-attention 
-mechanisms. The overall architecture can efficiently process and represent text data, enhancing the model's understanding of language semantics."""
+"""If the attention mechanisms from nlsa.py, lsa.py, cca.py, and se.py already meet your requirements for handling textual data effectively, 
+you may not need to integrate sce.py entirely. However, integrating sce.py might provide additional context-aware features that could enhance 
+your model's performance, especially if you find its approach to self-attention and feature normalization to be beneficial."""
 
 import torch
 import torch.nn as nn
