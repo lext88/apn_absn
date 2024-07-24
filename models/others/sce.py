@@ -1,6 +1,6 @@
 """If the attention mechanisms from nlsa.py, lsa.py, cca.py, and se.py already meet your requirements for handling textual data effectively, 
 you may not need to integrate sce.py entirely. However, integrating sce.py might provide additional context-aware features that could enhance 
-your model's performance, especially if you find its approach to self-attention and feature normalization to be beneficial."""
+your model's performance, especially if you find its approach to self-attention and feature normalization to be beneficial.
 
 import torch
 import torch.nn as nn
@@ -116,3 +116,4 @@ class EnhancedContextAwareEncoder(nn.Module):
         feature_embd = self.conv1x1_out(attention_output)
         
         return feature_embd
+"""
