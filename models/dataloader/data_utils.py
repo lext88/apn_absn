@@ -1,7 +1,7 @@
 from common.utils import set_seed
-from torch.utils.data import DataLoader
 from datasets import load_dataset
-from aux_dataloader import get_aux_dataloader
+from samplers import TextCategoriesSampler  # Make sure this import aligns with your directory structure
+from aux_dataloader import get_text_dataloader  # Updated import for text dataloader
 
 def dataset_builder(args):
     set_seed(args.seed)  # Fix random seed for reproducibility
@@ -10,15 +10,17 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'mnli')
         texts = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        # Get data loaders using the updated function
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['validation_mismatched']]
         labels_val = [ex['label'] for ex in dataset['validation_mismatched']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['test_mismatched']]
         labels_test = [ex['label'] for ex in dataset['test_mismatched']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -26,15 +28,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'sst2')
         texts = [ex['sentence'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['sentence'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['sentence'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -42,15 +44,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'qqp')
         texts = [ex['question1'] + " " + ex['question2'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['question1'] + " " + ex['question2'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['question1'] + " " + ex['question2'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -58,15 +60,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'sts-b')
         texts = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -74,15 +76,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'rte')
         texts = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -90,15 +92,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'qnli')
         texts = [ex['question'] + " " + ex['sentence'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['question'] + " " + ex['sentence'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['question'] + " " + ex['sentence'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
@@ -106,15 +108,15 @@ def dataset_builder(args):
         dataset = load_dataset('glue', 'wnli')
         texts = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['train']]
         labels = [ex['label'] for ex in dataset['train']]
-        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_loader = get_text_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_val = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['validation']]
         labels_val = [ex['label'] for ex in dataset['validation']]
-        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        validation_loader = get_text_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         texts_test = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['test']]
         labels_test = [ex['label'] for ex in dataset['test']]
-        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        test_loader = get_text_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers, n_cls=args.n_cls, n_per=args.n_per)
         
         return train_loader, validation_loader, test_loader
 
