@@ -1,55 +1,120 @@
 from common.utils import set_seed
-from transformers import BertTokenizer
 from torch.utils.data import DataLoader
+from datasets import load_dataset
+from aux_dataloader import get_aux_dataloader
 
 def dataset_builder(args):
     set_seed(args.seed)  # Fix random seed for reproducibility
 
-    if args.dataset == 'miniImageNet':
-        from models.dataloader.mini_imagenet import MiniImageNet as Dataset
-        # Return DataLoader
-        dataset = Dataset(args)
-        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    
-    elif args.dataset == 'cub':
-        from models.dataloader.cub import CUB as Dataset
-        # Return DataLoader
-        dataset = Dataset(args)
-        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    
-    elif args.dataset == 'tieredImageNet':
-        from models.dataloader.tiered_imagenet import tieredImageNet as Dataset
-        # Return DataLoader
-        dataset = Dataset(args)
-        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    
-    elif args.dataset == 'CIFAR-FS':
-        from models.dataloader.cifar_fs import DatasetLoader as Dataset
-        # Return DataLoader
-        dataset = Dataset(args)
-        return DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    
-    elif args.dataset in ['mnli', 'sst2', 'qqp', 'sts-b', 'rte', 'qnli', 'wnli']:
-        from datasets import load_dataset
+    if args.dataset == 'mnli':
+        dataset = load_dataset('glue', 'mnli')
+        texts = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
         
-        # Define a tokenizer for GLUE tasks
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        texts_val = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['validation_mismatched']]
+        labels_val = [ex['label'] for ex in dataset['validation_mismatched']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
         
-        def preprocess_function(examples):
-            # Tokenize and prepare data for BERT
-            return tokenizer(examples['sentence1'], examples.get('sentence2', None), truncation=True, padding='max_length', max_length=128)
+        texts_test = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['test_mismatched']]
+        labels_test = [ex['label'] for ex in dataset['test_mismatched']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
         
-        # Load dataset from HuggingFace datasets
-        dataset = load_dataset('glue', args.dataset)
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'sst2':
+        dataset = load_dataset('glue', 'sst2')
+        texts = [ex['sentence'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
         
-        # Preprocess and prepare dataset
-        dataset = dataset.map(preprocess_function, batched=True)
-        dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'])
+        texts_val = [ex['sentence'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
         
-        # Create DataLoaders
-        train_loader = DataLoader(dataset['train'], batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-        validation_loader = DataLoader(dataset['validation'], batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-        test_loader = DataLoader(dataset['test'], batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+        texts_test = [ex['sentence'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'qqp':
+        dataset = load_dataset('glue', 'qqp')
+        texts = [ex['question1'] + " " + ex['question2'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_val = [ex['question1'] + " " + ex['question2'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_test = [ex['question1'] + " " + ex['question2'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'sts-b':
+        dataset = load_dataset('glue', 'sts-b')
+        texts = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_val = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_test = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'rte':
+        dataset = load_dataset('glue', 'rte')
+        texts = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_val = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_test = [ex['premise'] + " " + ex['hypothesis'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'qnli':
+        dataset = load_dataset('glue', 'qnli')
+        texts = [ex['question'] + " " + ex['sentence'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_val = [ex['question'] + " " + ex['sentence'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_test = [ex['question'] + " " + ex['sentence'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
+        
+        return train_loader, validation_loader, test_loader
+
+    elif args.dataset == 'wnli':
+        dataset = load_dataset('glue', 'wnli')
+        texts = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['train']]
+        labels = [ex['label'] for ex in dataset['train']]
+        train_loader = get_aux_dataloader(texts, labels, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_val = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['validation']]
+        labels_val = [ex['label'] for ex in dataset['validation']]
+        validation_loader = get_aux_dataloader(texts_val, labels_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        
+        texts_test = [ex['sentence1'] + " " + ex['sentence2'] for ex in dataset['test']]
+        labels_test = [ex['label'] for ex in dataset['test']]
+        test_loader = get_aux_dataloader(texts_test, labels_test, batch_size=args.batch_size, num_workers=args.num_workers]
         
         return train_loader, validation_loader, test_loader
 
