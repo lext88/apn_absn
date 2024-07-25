@@ -56,6 +56,11 @@ class TextPreprocessor(Dataset):
             'labels': torch.tensor(label, dtype=torch.long)
         }
 
-def get_aux_dataloader(texts, labels, tokenizer_name='bert-base-uncased', max_len=128, batch_size=32, num_workers=4):
+def get_text_dataloader(texts, labels, tokenizer_name='bert-base-uncased', max_len=128, batch_size=32, num_workers=4, n_cls=5, n_per=5):
+    # Create dataset and sampler
     dataset = TextPreprocessor(texts, labels, tokenizer_name, max_len)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_workers, pin_memory=True)
+    sampler = TextCategoriesSampler(labels, n_batch=(len(labels) // batch_size), n_cls=n_cls, n_per=n_per)
+
+    # Create DataLoader
+    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers, pin_memory=True)
+    return dataloader
