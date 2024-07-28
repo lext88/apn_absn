@@ -1,6 +1,5 @@
 import os
 import tqdm
-import time
 import wandb
 import torch
 import argparse
@@ -8,14 +7,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
-
 from common.meter import Meter
 from common.utils import compute_accuracy, set_seed, restart_from_checkpoint
 from models.dataloader.samplers import CategoriesSampler
 from models.dataloader.data_utils import dataset_builder
 from models.dataloader.aux_dataloader import get_aux_dataloader
 from models.renet import DCANet
-
 from test import test_main, evaluate
 from utils import rotrate_concat, record_data
 from common.utils import pprint, ensure_path, set_gpu
@@ -110,7 +107,7 @@ def train(epoch, model, loader, optimizer, criterion, args=None):
     train_loader = loader['train_loader']
     train_loader_aux = loader['train_loader_aux']
 
-    # label for query set, always in the same pattern
+    # Label for query set, always in the same pattern
     query_label = torch.arange(args.way).repeat(args.query).cuda()  # 012340123401234...
 
     loss_meter = Meter()
@@ -118,6 +115,9 @@ def train(epoch, model, loader, optimizer, criterion, args=None):
 
     k = args.way * args.shot
     tqdm_gen = tqdm.tqdm(train_loader)
+
+    # Initialize the AdaptivePrototypicalLoss with required parameters
+    adaptive_prototypical_loss = AdaptivePrototypicalLoss(args)
 
     for i, ((data, train_labels), (data_aux, train_labels_aux)) in enumerate(zip(tqdm_gen, train_loader_aux), 1):
 
@@ -132,18 +132,16 @@ def train(epoch, model, loader, optimizer, criterion, args=None):
         data, fea_loss, cst_loss, dis_loss = model(data)
         data_aux = model(data_aux, aux=True)  # I prefer to separate feed-forwarding data and data_aux due to BN
 
-        # loss for batch
+        # Extract features
         model.module.mode = 'coda'
         data_shot, data_query = data[:k], data[k:]
         logits, absolute_logits = model((data_shot.unsqueeze(0).repeat(1, 1, 1, 1, 1), data_query))
 
         # Compute the adaptive prototypical loss
         features = model.get_features(data_shot, data_query)  # Assuming a method to extract features
-        ce_loss = criterion.cross_entropy_loss(logits, query_label, attention_weights=None)
-        sup_clu_loss = criterion.sup_clu_loss(features, labels=None, mask=None, attention_weights=None)
-        loss = ce_loss + sup_clu_loss
+        loss = adaptive_prototypical_loss(features, query_label)
 
-        # loss for auxiliary batch
+        # Loss for auxiliary batch
         model.module.mode = 'fc'
         logits_global, logits_eq = model(data_aux)
         loss_aux = F.cross_entropy(logits_global, train_labels_aux)
@@ -155,16 +153,16 @@ def train(epoch, model, loader, optimizer, criterion, args=None):
 
         l_re = fea_loss + dis_loss * args.w_d
         loss_aux = absolute_loss + loss_aux
-        loss = args.lamb * (epi_loss) + loss_aux + loss_eq + l_re
+        total_loss = args.lamb * (loss) + loss_aux + loss_eq + l_re
 
         acc = compute_accuracy(logits, query_label)
-        loss_meter.update(loss.item())
+        loss_meter.update(total_loss.item())
         acc_meter.update(acc)
         tqdm_gen.set_description(f'[train] epo:{epoch:>3} | avg.loss:{loss_meter.avg():.4f} | avg.acc:{acc_meter.avg():.3f} (curr:{acc:.3f})')
 
-        loss.backward()
+        optimizer.zero_grad()
+        total_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
         optimizer.step()
-        optimizer.zero_grad()
 
     return loss_meter.avg(), acc_meter.avg(), acc_meter.confidence
