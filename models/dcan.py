@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.resnet import ResNet
-from models.dpta import Self_Dynamic_Prototype
-from ddf.ddf import DDFPack
-from models.cca import CrossCorrelationAttention
-from models.se import SqueezeExcitation
-from models.lsa import LocalSelfAttention
+from apn_absn.models.resnet import ResNet
+from apn_absn.models.dpta import Self_Dynamic_Prototype
+from apn_absn.ddf.ddf import DDFPack
+from apn_absn.models.others.cca import CrossCorrelationAttention
+from apn_absn.models.others.se import SqueezeExcitation
+from apn_absn.models.others.lsa import LocalSelfAttention
 
 class DCANet(nn.Module):
 
