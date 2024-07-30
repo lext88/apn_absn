@@ -1,4 +1,4 @@
-"""
+
 import torch.nn as nn
 
 # This ResNet network was designed following the practice of the following papers:
@@ -95,4 +95,4 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         return x
-"""
+
