@@ -4,13 +4,14 @@
 #include <cmath>
 #include <vector>
 
+// Forward and backward launcher functions
 int DDFAddForwardLauncher(
     const at::Tensor features, const at::Tensor channel_filter,
     const at::Tensor spatial_filter, const int kernel_size,
     const int dilation, const int stride,
-    const int batch_size,const int channels,
-    const int bottom_height, const int bottom_width,
-    const int top_height, const int top_width,
+    const int batch_size, const int channels,
+    const int sequence_length, // Updated to sequence_length
+    const int output_length,   // Updated to output_length
     at::Tensor output);
 
 int DDFAddBackwardLauncher(
@@ -18,8 +19,8 @@ int DDFAddBackwardLauncher(
     const at::Tensor channel_filter, const at::Tensor spatial_filter,
     const int kernel_size, const int dilation, const int stride,
     const int batch_size, const int channels,
-    const int top_height, const int top_width,
-    const int bottom_height, const int bottom_width,
+    const int output_length, // Updated to output_length
+    const int sequence_length, // Updated to sequence_length
     at::Tensor rtop_grad, at::Tensor rbottom_grad,
     at::Tensor rspatial_filter_grad, at::Tensor bottom_grad,
     at::Tensor channel_filter_grad, at::Tensor spatial_filter_grad);
@@ -32,8 +33,8 @@ int DDFAddBackwardLauncher(
     CHECK_CONTIGUOUS(x)
 
 int ddf_add_forward_cuda(
-    at::Tensor features,at::Tensor channel_filter, at::Tensor spatial_filter,
-    int kernel_size, int dilation, int stride, at::Tensor output){
+    at::Tensor features, at::Tensor channel_filter, at::Tensor spatial_filter,
+    int kernel_size, int dilation, int stride, at::Tensor output) {
     CHECK_INPUT(features);
     CHECK_INPUT(channel_filter);
     CHECK_INPUT(spatial_filter);
@@ -42,16 +43,13 @@ int ddf_add_forward_cuda(
 
     const int batch_size = features.size(0);
     const int channels = features.size(1);
-    const int bottom_height = features.size(2);
-    const int bottom_width = features.size(3);
-    const int top_height = output.size(2);
-    const int top_width = output.size(3);
+    const int sequence_length = features.size(2); // Adjusted to sequence_length
+    const int output_length = output.size(2); // Adjusted to output_length
 
     DDFAddForwardLauncher(features, channel_filter, spatial_filter,
                           kernel_size, dilation, stride,
                           batch_size, channels,
-                          bottom_height, bottom_width,
-                          top_height, top_width,
+                          sequence_length, output_length,
                           output);
     return 1;
 }
@@ -62,7 +60,7 @@ int ddf_add_backward_cuda(
     int kernel_size, int dilation, int stride,
     at::Tensor rtop_grad, at::Tensor rbottom_grad,
     at::Tensor rspatial_filter_grad, at::Tensor bottom_grad,
-    at::Tensor channel_filter_grad, at::Tensor spatial_filter_grad){
+    at::Tensor channel_filter_grad, at::Tensor spatial_filter_grad) {
     CHECK_INPUT(top_grad);
     CHECK_INPUT(features);
     CHECK_INPUT(channel_filter);
@@ -77,19 +75,17 @@ int ddf_add_backward_cuda(
 
     const int batch_size = features.size(0);
     const int channels = features.size(1);
-    const int bottom_height = features.size(2);
-    const int bottom_width = features.size(3);
-    const int top_height = top_grad.size(2);
-    const int top_width = top_grad.size(3);
+    const int sequence_length = features.size(2); // Adjusted to sequence_length
+    const int output_length = top_grad.size(2); // Adjusted to output_length
 
-    rtop_grad.resize_({batch_size, int(top_height/stride), int(top_width/stride), channels});
-    rbottom_grad.resize_({batch_size, bottom_height, bottom_width, channels});
-    rspatial_filter_grad.resize_({batch_size, int(top_height/stride), int(top_width/stride), kernel_size*kernel_size});
+    rtop_grad.resize_({batch_size, int(output_length/stride), channels}); // Adjusted for 1D sequence
+    rbottom_grad.resize_({batch_size, sequence_length, channels}); // Adjusted for 1D sequence
+    rspatial_filter_grad.resize_({batch_size, int(output_length/stride), kernel_size});
 
     DDFAddBackwardLauncher(top_grad, features, channel_filter, spatial_filter,
                            kernel_size, dilation, stride, batch_size,
-                           channels, top_height, top_width, bottom_height,
-                           bottom_width, rtop_grad, rbottom_grad, rspatial_filter_grad,
+                           channels, output_length, sequence_length,
+                           rtop_grad, rbottom_grad, rspatial_filter_grad,
                            bottom_grad, channel_filter_grad, spatial_filter_grad);
-  return 1;
+    return 1;
 }
