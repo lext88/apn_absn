@@ -12,7 +12,7 @@ using namespace at;  // temporal fix for pytorch<=0.4.1 (see #9848)
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
         i += blockDim.x * gridDim.x)
 
-#define THREADS_PER_BLOCK 1024  // Adjusted for text data
+#define THREADS_PER_BLOCK 256  // Adjusted for text data
 #define MAX_SHARED_MEMORY 49152
 #define MAX_SHARED_SCALAR_T 6144
 #define kTileDim 32
@@ -25,8 +25,7 @@ inline int divideUP(const int x, const int y) { return (((x) + (y)-1) / (y)); }
 // Adapt indexing for text data
 __device__ inline int Loc2Index(const int n, const int s, const int f,
                                 const int seq_len, const int feature_dim) {
-    int index = s + n * seq_len * feature_dim + f * seq_len;
-    return index;
+    return s + n * seq_len * feature_dim + f * seq_len;
 }
 
 template <typename scalar_t>
@@ -91,8 +90,8 @@ __global__ void DDFForward(const int num_kernels, const scalar_t *__restrict__ b
     const int seq_pos = index % seq_len;
     const int n = blockIdx.y;
 
-    const int start_pos = seq_pos * stride - ((kernel_size - 1) / 2)*dilation;
-    const int end_pos = seq_pos * stride + ((kernel_size - 1) / 2)*dilation + 1;
+    const int start_pos = seq_pos * stride - ((kernel_size - 1) / 2) * dilation;
+    const int end_pos = seq_pos * stride + ((kernel_size - 1) / 2) * dilation + 1;
 
     scalar_t output_val = 0;
     scalar_t lost = 0;
@@ -101,8 +100,8 @@ __global__ void DDFForward(const int num_kernels, const scalar_t *__restrict__ b
 
     int pos, filter_id, feature_id;
 
-    for (int k = split_id; k < kernel_size * kernel_size; k += FORWARD_THREADS_PER_PIXEL) {
-        filter_id = Loc2Index(n, k, seq_pos, seq_len, kernel_size * kernel_size);
+    for (int k = split_id; k < kernel_size; k += FORWARD_THREADS_PER_PIXEL) {
+        filter_id = Loc2Index(n, k, seq_pos, seq_len, kernel_size);
         shared_spatial_filter[k * FORWARD_WARP_SIZE + pixel_id] = bottom_spatial_filter[filter_id];
     }
     __syncthreads();
