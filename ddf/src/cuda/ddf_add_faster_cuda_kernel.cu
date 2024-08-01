@@ -1,9 +1,6 @@
 #include <ATen/ATen.h>
 #include <torch/extension.h>
 
-#include <cmath>
-#include <vector>
-
 #define THREADS_PER_BLOCK 1024
 #define DATA_TILE 16
 #define CHANNEL_THREADS 4
@@ -15,8 +12,7 @@ inline int divideUP(const int x, const int y) { return (((x) + (y)-1) / (y)); }
 
 __device__ inline int Loc2Index(const int n, const int c, const int i,
                                 const int channel_num, const int length) {
-    int index = i + (c + n * channel_num) * length;
-    return index;
+    return i + (c + n * channel_num) * length;
 }
 
 template <typename scalar_t>
