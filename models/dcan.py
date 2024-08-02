@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from apn_absn.models.resnet import ResNet
 from apn_absn.models.dpta import Self_Dynamic_Prototype
 from apn_absn.ddf.ddf import DDFPack
-from apn_absn.models.others.cca import CrossCorrelationAttention
+from apn_absn.models.others.cca import CCA
 from apn_absn.models.others.se import SqueezeExcitation
 from apn_absn.models.others.lsa import LocalSelfAttention
 
