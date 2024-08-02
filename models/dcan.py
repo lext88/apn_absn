@@ -7,7 +7,7 @@ from apn_absn.models.dpta import Self_Dynamic_Prototype
 from apn_absn.ddf.ddf import DDFPack
 from apn_absn.models.others.cca import CCA
 from apn_absn.models.others.se import SqueezeExcitation
-from apn_absn.models.others.lsa import LocalSelfAttention
+from apn_absn.models.others.lsa import LocalSelfAttentionWithSEAndCCA
 
 class DCANet(nn.Module):
 
@@ -24,9 +24,9 @@ class DCANet(nn.Module):
         self.ddf = DDFPack(in_channels=640)
 
         self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1)
-        self.cca = CrossCorrelationAttention(self.encoder_dim)
+        self.cca = CCA(self.encoder_dim)
         self.se = SqueezeExcitation(self.encoder_dim)
-        self.lsa = LocalSelfAttention(self.encoder_dim, self.args.num_heads)
+        self.lsa = LocalSelfAttentionWithSEAndCCA(self.encoder_dim, self.args.num_heads)
 
         self.eq_head = nn.Sequential(
             nn.Linear(640, 640),
