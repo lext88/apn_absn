@@ -23,7 +23,7 @@ class DCANet(nn.Module):
         self.ddf = DDFPack(in_channels=640)
 
         self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1)
-        self.cca = CCA(channel=self.encoder_dim)
+        self.cca = self.cca = CCA(channel=self.encoder_dim, kernel_sizes=[3, 3], planes=[self.encoder_dim // 2, self.encoder_dim])
         self.se = SqueezeExcitation(self.encoder_dim)
         self.lsa = LocalSelfAttentionWithSEAndCCA(self.encoder_dim, self.args.num_heads)
 
