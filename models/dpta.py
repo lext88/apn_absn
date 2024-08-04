@@ -83,6 +83,13 @@ class Self_Dynamic_Prototype(nn.Module):
 
         self.attention = MultiHeadAttention(n_heads=8, d_model=hidden_dim, d_k=hidden_dim // 8, d_v=hidden_dim // 8)
 
+        # Add a member variable to hold prototypes
+        self.prototypes = None
+
+    def get_prototypes(self):
+        # Return prototypes
+        return self.prototypes
+
     def get_score(self, proto, query):
         bs, n, d = query.size()
         bs, m, d = proto.size()
@@ -110,9 +117,9 @@ class Self_Dynamic_Prototype(nn.Module):
             multi_heads_weights = multi_heads_weights.view(-1, self.proto_size, 1)
             multi_heads_weights = F.softmax(multi_heads_weights, dim=0)
             support_feat = support_feat.contiguous().view(-1, dim)
-            protos = multi_heads_weights * support_feat.unsqueeze(1)
-            protos = protos.sum(0)
-            updated_query, fea_loss, cst_loss, dis_loss = self.query_loss(query_feat, protos)
+            self.prototypes = multi_heads_weights * support_feat.unsqueeze(1)
+            self.prototypes = self.prototypes.sum(0)
+            updated_query, fea_loss, cst_loss, dis_loss = self.query_loss(query_feat, self.prototypes)
             updated_query = updated_query.permute(0, 2, 1)
             updated_query = updated_query.contiguous().view(batch_size, dim, h, w)
             updated_query = self.o(updated_query) + query
@@ -122,9 +129,9 @@ class Self_Dynamic_Prototype(nn.Module):
             multi_heads_weights = multi_heads_weights.view(-1, self.proto_size, 1)
             multi_heads_weights = F.softmax(multi_heads_weights, dim=0)
             support_feat = support_feat.contiguous().view(-1, dim)
-            protos = multi_heads_weights * support_feat.unsqueeze(1)
-            protos = protos.sum(0)
-            updated_query, fea_loss = self.query_loss(query_feat, protos)
+            self.prototypes = multi_heads_weights * support_feat.unsqueeze(1)
+            self.prototypes = self.prototypes.sum(0)
+            updated_query, fea_loss = self.query_loss(query_feat, self.prototypes)
             updated_query = updated_query.permute(0, 2, 1)
             updated_query = updated_query.contiguous().view(batch_size, dim, h, w)
             updated_query = self.o(updated_query) + query
