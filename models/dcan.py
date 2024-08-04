@@ -10,7 +10,6 @@ from apn_absn.models.others.se import SqueezeExcitation
 from apn_absn.models.others.lsa import LocalSelfAttentionWithSEAndCCA
 
 class DCANet(nn.Module):
-
     def __init__(self, args, mode=None):
         super().__init__()
         self.mode = mode
@@ -24,7 +23,7 @@ class DCANet(nn.Module):
         self.ddf = DDFPack(in_channels=640)
 
         self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1)
-        self.cca = CCA(self.encoder_dim)
+        self.cca = CCA(channel=self.encoder_dim)
         self.se = SqueezeExcitation(self.encoder_dim)
         self.lsa = LocalSelfAttentionWithSEAndCCA(self.encoder_dim, self.args.num_heads)
 
@@ -40,6 +39,8 @@ class DCANet(nn.Module):
 
         # Initialize prototypes
         self.prototype_weight = nn.Parameter(torch.zeros(self.num_proto, self.encoder_dim))
+        # Debugging output
+        print("Dynamic Prototype Initialized:", self.dynamic_prototype)
 
     def forward(self, input, aux=False):
         if self.mode == 'fc':
@@ -149,5 +150,3 @@ class DCANet(nn.Module):
         else:
             update_x = self.dynamic_prototype(x, x)
             return update_x
-
-    
