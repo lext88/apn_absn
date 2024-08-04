@@ -29,7 +29,7 @@ class LocalSelfAttentionWithSEAndCCA(nn.Module):
         )
 
         self.se_block = SqueezeExcitation(out_channels)
-        self.cca_block = CCA(kernel_sizes=[3, 3], planes=[out_channels // 2, out_channels])
+        self.cca_block = CCA(channel=out_channels, kernel_sizes=[3, 3], planes=[out_channels // 2, out_channels])
 
         self.reset_parameters()
 
