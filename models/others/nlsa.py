@@ -29,7 +29,7 @@ class NonLocalSelfAttentionWithSEAndCCA(nn.Module):
         nn.init.constant_(self.W[1].bias, 0)
 
         self.se_block = SqueezeExcitation(in_channels)
-        self.cca_block = CCA(kernel_sizes=[3, 3], planes=[in_channels // 2, in_channels])
+        self.cca_block = CCA(channel=in_channels, kernel_sizes=[3, 3], planes=[in_channels // 2, in_channels])
 
     def forward(self, x):
         batch_size = x.size(0)
