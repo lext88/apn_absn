@@ -150,17 +150,4 @@ class DCANet(nn.Module):
             update_x = self.dynamic_prototype(x, x)
             return update_x
 
-    # Method to initialize prototypes
-    def initialize_prototypes(self, initializer='zeros'):
-        if initializer == 'zeros':
-            nn.init.zeros_(self.prototype_weight)
-        elif initializer == 'xavier':
-            nn.init.xavier_uniform_(self.prototype_weight)
-        elif initializer == 'kaiming':
-            nn.init.kaiming_uniform_(self.prototype_weight)
-        else:
-            raise ValueError("Unknown initializer")
-
-    # Method to retrieve prototypes
-    def get_prototypes(self):
-        return self.prototype_weight
+    
