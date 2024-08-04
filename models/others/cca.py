@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 
 class CCA(nn.Module):
-    def __init__(self, kernel_sizes=[3, 3], planes=[16, 1]):
+    def __init__(self, channel, kernel_sizes=[3, 3], planes=[640, 640]):
         super(CCA, self).__init__()
         num_layers = len(kernel_sizes)
         nn_modules = []
 
         for i in range(num_layers):
-            ch_in = 1 if i == 0 else planes[i - 1]
+            ch_in = channel if i == 0 else planes[i - 1]
             ch_out = planes[i]
             k_size = kernel_sizes[i]
             nn_modules.append(SepConv1d(in_planes=ch_in, out_planes=ch_out, ksize=k_size))
@@ -19,11 +19,11 @@ class CCA(nn.Module):
     def forward(self, x):
         # Apply network on the input and its "transpose" (swapping A-B to B-A ordering of the correlation tensor),
         # this second result is "transposed back" to the A-B ordering to match the first result and be able to add together
-        x = self.conv(x) + self.conv(x.permute(0, 1, 2, 3).flip(dims=[2]))
+        x = self.conv(x) + self.conv(x.permute(0, 1, 2).flip(dims=[2]))
         return x
 
 class SepConv1d(nn.Module):
-    """ approximates 3 x 3 kernels via two subsequent 3 x 1 and 1 x 3 """
+    """ Approximates 3 x 3 kernels via two subsequent 3 x 1 and 1 x 3 """
     def __init__(self, in_planes, out_planes, ksize=3, do_padding=True, bias=False):
         super(SepConv1d, self).__init__()
         self.isproj = False
