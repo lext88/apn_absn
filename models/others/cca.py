@@ -1,8 +1,9 @@
+# cca.py code
 import torch
 import torch.nn as nn
 
 class CCA(nn.Module):
-    def __init__(self, channel, kernel_sizes=[3, 3], planes=[256, 256]):
+    def __init__(self, channel=256, kernel_sizes=[3, 3], planes=[256, 256]):
         super(CCA, self).__init__()
         num_layers = len(kernel_sizes)
         nn_modules = []
@@ -21,7 +22,6 @@ class CCA(nn.Module):
         return x
 
 class SepConv1d(nn.Module):
-    """ Approximates 3 x 3 kernels via two subsequent 3 x 1 and 1 x 3 """
     def __init__(self, in_planes, out_planes, ksize=3, do_padding=True, bias=False):
         super(SepConv1d, self).__init__()
         self.isproj = False
@@ -31,7 +31,7 @@ class SepConv1d(nn.Module):
             self.isproj = True
             self.proj = nn.Sequential(
                 nn.Conv1d(in_channels=in_planes, out_channels=out_planes, kernel_size=1, bias=bias),
-                nn.BatchNorm1d(out_planes)
+                nn.BatchNorm1d(out_channels)
             )
 
         self.conv1 = nn.Sequential(
