@@ -1,10 +1,11 @@
+# lsa.py code
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
 class LocalSelfAttentionWithSEAndCCA(nn.Module):
-    def __init__(self, in_channels, out_channels, num_heads=8, kernel_size=1, stride=1, padding=0, bias=False):
+    def __init__(self, in_channels=256, out_channels=256, num_heads=8, kernel_size=1, stride=1, padding=0, bias=False):
         super(LocalSelfAttentionWithSEAndCCA, self).__init__()
         self.out_channels = out_channels
         self.num_heads = num_heads
