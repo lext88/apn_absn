@@ -1,9 +1,10 @@
+# nlsa.py code
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 class NonLocalSelfAttentionWithSEAndCCA(nn.Module):
-    def __init__(self, in_channels, inter_channels=None, num_heads=8):
+    def __init__(self, in_channels=256, inter_channels=None, num_heads=8):
         super(NonLocalSelfAttentionWithSEAndCCA, self).__init__()
 
         self.num_heads = num_heads
