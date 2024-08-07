@@ -18,23 +18,23 @@ class DCANet(nn.Module):
         self.num_spt = args.way * args.shot
 
         self.encoder = ResNet(args=args)
-        self.encoder_dim = 640
+        self.encoder_dim = 256  # Updated channel size
         self.fc = nn.Linear(self.encoder_dim, self.args.num_class)
-        self.ddf = DDFPack(in_channels=640)
+        self.ddf = DDFPack(in_channels=256)  # Updated channel size
 
-        self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 640, 320, tem_update=0.1, temp_gather=0.1)
+        self.dynamic_prototype = Self_Dynamic_Prototype(args.proto_size, args, 256, 128, tem_update=0.1, temp_gather=0.1)
         self.cca = CCA(channel=self.encoder_dim, kernel_sizes=[3, 3], planes=[self.encoder_dim // 2, self.encoder_dim])
         self.se = SqueezeExcitation(self.encoder_dim)
         self.lsa = LocalSelfAttentionWithSEAndCCA(self.encoder_dim, self.args.num_heads)
 
         self.eq_head = nn.Sequential(
-            nn.Linear(640, 640),
-            nn.BatchNorm1d(640),
+            nn.Linear(256, 256),  # Updated channel size
+            nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
-            nn.Linear(640, 640),
-            nn.BatchNorm1d(640),
+            nn.Linear(256, 256),  # Updated channel size
+            nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
-            nn.Linear(640, 4)
+            nn.Linear(256, 4)
         )
 
         # Initialize prototypes
