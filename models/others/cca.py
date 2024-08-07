@@ -31,7 +31,7 @@ class SepConv1d(nn.Module):
             self.isproj = True
             self.proj = nn.Sequential(
                 nn.Conv1d(in_channels=in_planes, out_channels=out_planes, kernel_size=1, bias=bias),
-                nn.BatchNorm1d(out_channels)
+                nn.BatchNorm1d(out_planes)  # Correctly use out_planes
             )
 
         self.conv1 = nn.Sequential(
