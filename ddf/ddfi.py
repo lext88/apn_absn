@@ -1,27 +1,28 @@
-""" 
-DDF operation and DDF/DDF-Up Pack
-Reference paper "Decoupled Dynamic Filter Networks" - https://arxiv.org/abs/2104.14107
-"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Function
 from torch.nn.init import calculate_gain
 
-from . import ddf_mul_ext, ddf_mul_faster_ext, ddf_add_ext, ddf_add_faster_ext
+# Move these imports inside functions or methods where they are used
+# from . import ddf_mul_ext, ddf_mul_faster_ext, ddf_add_ext, ddf_add_faster_ext
 
-OP_DICT = {
-    'mul': ddf_mul_ext,
-    'mul_faster': ddf_mul_faster_ext,
-    'add': ddf_add_ext,
-    'add_faster': ddf_add_faster_ext
-}
-
+OP_DICT = {}
 
 class DDFFunction(Function):
     @staticmethod
     def forward(ctx, features, channel_filter, spatial_filter,
                 kernel_size=3, dilation=1, stride=1, kernel_combine='mul', version=''):
+        import ddf_mul_ext
+        import ddf_mul_faster_ext
+        import ddf_add_ext
+        import ddf_add_faster_ext
+        
+        OP_DICT['mul'] = ddf_mul_ext
+        OP_DICT['mul_faster'] = ddf_mul_faster_ext
+        OP_DICT['add'] = ddf_add_ext
+        OP_DICT['add_faster'] = ddf_add_faster_ext
+        
         # check args
         assert features.is_cuda, 'input feature must be a CUDA tensor.'
         assert channel_filter.is_cuda, 'channel_filter must be a CUDA tensor.'
@@ -85,6 +86,16 @@ class DDFFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
+        import ddf_mul_ext
+        import ddf_mul_faster_ext
+        import ddf_add_ext
+        import ddf_add_faster_ext
+        
+        OP_DICT['mul'] = ddf_mul_ext
+        OP_DICT['mul_faster'] = ddf_mul_faster_ext
+        OP_DICT['add'] = ddf_add_ext
+        OP_DICT['add_faster'] = ddf_add_faster_ext
+        
         assert grad_output.is_cuda
 
         # TODO: support HALF operation
