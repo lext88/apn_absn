@@ -83,8 +83,8 @@ class Self_Dynamic_Prototype(nn.Module):
 
         self.attention = MultiHeadAttention(n_heads=8, d_model=hidden_dim, d_k=hidden_dim // 8, d_v=hidden_dim // 8)
 
-        # Add a member variable to hold prototypes
-        self.prototypes = None
+        # Initialize prototypes with zeros
+        self.prototypes = torch.zeros(proto_size, hidden_dim)
 
     def get_prototypes(self):
         # Return prototypes
@@ -119,6 +119,7 @@ class Self_Dynamic_Prototype(nn.Module):
             support_feat = support_feat.contiguous().view(-1, dim)
             self.prototypes = multi_heads_weights * support_feat.unsqueeze(1)
             self.prototypes = self.prototypes.sum(0)
+            print("Training prototypes:", self.prototypes)
             updated_query, fea_loss, cst_loss, dis_loss = self.query_loss(query_feat, self.prototypes)
             updated_query = updated_query.permute(0, 2, 1)
             updated_query = updated_query.contiguous().view(batch_size, dim, h, w)
@@ -131,6 +132,7 @@ class Self_Dynamic_Prototype(nn.Module):
             support_feat = support_feat.contiguous().view(-1, dim)
             self.prototypes = multi_heads_weights * support_feat.unsqueeze(1)
             self.prototypes = self.prototypes.sum(0)
+            print("Evaluation prototypes:", self.prototypes)
             updated_query, fea_loss = self.query_loss(query_feat, self.prototypes)
             updated_query = updated_query.permute(0, 2, 1)
             updated_query = updated_query.contiguous().view(batch_size, dim, h, w)
